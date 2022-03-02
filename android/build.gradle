@@ -1,0 +1,56 @@
+buildscript {
+    ext.kotlin_version = '1.6.10'
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.1.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+android {
+    ...
+    buildTypes {
+        ...
+        release {
+            ...
+            ndk {
+                if (!project.hasProperty('target-platform')) {
+                    abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+                } else {
+                    def platforms = project.property('target-platform').split(',')
+                    def platformMap = [
+                            'android-arm'  : 'armeabi-v7a',
+                            'android-arm64': 'arm64-v8a',
+                            'android-x86'  : 'x86',
+                            'android-x64'  : 'x86_64',
+                    ]
+                    abiFilters = platforms.stream().map({ e ->
+                        platformMap.containsKey(e) ? platformMap[e] : e
+                    }).toArray()
+                }
+            }
+    }
+}
